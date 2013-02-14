@@ -20,6 +20,7 @@ logging: true
 #     # Regex list of domains to either auto-remove, if blacklist, or to ignore, if whitelist
 #     domains:
 #       - imgur\.com
+#       - quickmeme\.com
 #     # Regex list of words auto-removed from titles of posts
 #     badwords:
 #       - fag

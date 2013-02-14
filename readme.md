@@ -1,6 +1,7 @@
-This is a bot I coded for dealing with stupid stuff on reddit, what you often see as a moderator.
+This is the stupidly simple reddit moderation bot. Its designed to be no-frills, but just work. It has very few dependencies (the snoo gem, and highline for the `reddit_auth.rb` scriptlet), doesn't use SQL or any web UI, and is run out of a config file.
 
-It is designed to be no-frills, and does what I need. I offer no support over it, and it is offered as-is.
+# Background
+This bot started out largely as a proof of concept of usage of the [snoo](/paradox460/snoo) gem, and then grew from there. It has grown organically to suit my needs across a few large subreddits, but the goal was always simplicity. I wanted something I could run with CRON, edit with vim, and check on via modlogs. This satisfies all three requirements
 
 # Setup
 This assumes you have a cursory knowledge of how ruby works, how the terminal works, and how cron works. If not, I would read up on all three until you are comfortable with them. You do not have to know ruby to make the bot run. You do have to know how to run a ruby script.
