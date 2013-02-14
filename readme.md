@@ -18,6 +18,8 @@ This assumes you have a cursory knowledge of how ruby works, how the terminal wo
 ```
 Copyright (c) 2013 Jeff Sandberg
 
+MIT License
+
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
