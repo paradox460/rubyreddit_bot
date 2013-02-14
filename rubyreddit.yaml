@@ -1,0 +1,31 @@
+# The amount of "things" the bot will fetch with every request. Leave at 100 for maximum efficiency
+limit: 100
+# Your modhash and cookie string
+# Obtain these using the "reddit_auth.rb" script
+modhash:
+cookies:
+
+# Configures if this bot will do file-based logging.
+logging: true
+
+# Subreddit configuration
+# Each subreddit is a node, with multiple sub-nodes, depending on how you want it configured
+# Every setting for a subreddit is optional, you don't have to use any of them. You can just leave them out
+# subreddits:
+#   # Example:
+#   # The subreddit name:
+#   subreddit:
+#     # If it should run in whitelist mode, removing anything BUT the domains listed. Leave this node off for blacklist
+#     mode: whitelist
+#     # Regex list of domains to either auto-remove, if blacklist, or to ignore, if whitelist
+#     domains:
+#       - imgur\.com
+#     # Regex list of words auto-removed from titles of posts
+#     badwords:
+#       - fag
+#     # Regex list of usernames to auto-remove
+#     badusers:
+#       - trollface
+#     # Regex of words that trigger an auto-remove of comments
+#     badcomments:
+#       - tumblr
