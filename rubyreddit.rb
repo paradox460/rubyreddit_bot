@@ -1,7 +1,6 @@
 require 'snoo'
 require 'logger'
 require 'yaml'
-require 'pry'
 
 CONFIG = YAML.load_file(File.expand_path('../rubyreddit.yaml', __FILE__))
 
