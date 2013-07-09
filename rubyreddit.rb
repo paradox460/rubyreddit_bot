@@ -1,20 +1,19 @@
 require 'snoo'
 require 'logger'
 require 'yaml'
+require 'pry'
+
+# Locking trick that uses DATA
+DATA.flock(File::LOCK_EX | File::LOCK_NB) or abort "Already Running."
+trap("INT", "EXIT")
+
+# log = Logger.new('fuckspam/removals.log', 'weekly')
+log = Logger.new(STDOUT)
+log.level = Logger::DEBUG
 
 CONFIG = YAML.load_file(File.expand_path('../rubyreddit.yaml', __FILE__))
 
-if $stdout.isatty
-  log = Logger.new(STDOUT)
-elsif CONFIG['logging']
-  log = Logger.new('fuckspam/removals.log', 'weekly')
-else
-  log = Logger.new('/dev/null')
-end
-log.level = Logger::DEBUG
-
-
-reddit = Snoo::Client.new
+reddit = Snoo::Client.new useragent: "Paradox's police bot"
 
 reddit.auth CONFIG['modhash'], CONFIG['cookies']
 
@@ -77,7 +76,7 @@ CONFIG['subreddits'].each do |sr, v|
       end
     else
       spam += listing.select do |thing|
-        domains.index { |r| thing['data']['domain'] =~ r }.nil? unless ( thing['data']['approved_by'] or (thing['data']['banned_by'] != true && thing['data']['banned_by']))
+        (! domains.index { |r| thing['data']['domain'] =~ r }.nil? ) unless ( thing['data']['approved_by'] or (thing['data']['banned_by'] != true && thing['data']['banned_by']))
       end
     end
     listing -= spam
@@ -124,3 +123,5 @@ shit.each do |thing|
   reddit.remove(thing['data']['name'], false) rescue nil
   sleep 2
 end
+__END__
+DO NOT DELETE: Used for locking
