@@ -1,40 +1,48 @@
-This is the stupidly simple reddit moderation bot. Its designed to be no-frills, but just work. It has very few dependencies (the snoo gem, and highline for the `reddit_auth.rb` scriptlet), doesn't use SQL or any web UI, and is run out of a config file.
+You're currenly on our prototype, evented branch. Nothing works just yet, but in the end this will be version 2.0.0 of the bot.
 
-# Background
-This bot started out largely as a proof of concept of usage of the [snoo](/paradox460/snoo) gem, and then grew from there. It has grown organically to suit my needs across a few large subreddits, but the goal was always simplicity. I wanted something I could run with CRON, edit with vim, and check on via modlogs. This satisfies all three requirements
+# Why Evented?
+Going evented presents its own share of complications, but in the end can provide a faster, more preformant bot. An evented bot can respond to new posts faster, use less resources, and be daemonized, so it doesn't have to rely on cron or other schedulers.
 
-# Setup
-This assumes you have a cursory knowledge of how ruby works, how the terminal works, and how cron works. If not, I would read up on all three until you are comfortable with them. You do not have to know ruby to make the bot run. You do have to know how to run a ruby script.
+The downside of evented programmings are still present, such as race conditions and, in our case, being throttled by reddit. However, it is possible to code provisions to deal with this
 
-1. Clone the repo to your server. You can run this on a desktop machine, but it wont work as a bot very well
-2. Install dependencies by running the `bundle` command.
-3. Configure the `rubyreddit.yml` file to your liking. It is well commented, and controls the entire function of the bot
-  + To get your modhash/cookie pair, use the `reddit_auth.rb` script included. Run this via `ruby reddit_auth.rb`, and follow the prompts
-4. Run the bot once to make sure it works right. `ruby rubyreddit.rb`. You will get an interactive log, regardless of how you configured yaml.
-5. Add the bot to your cron tab, running say, once every 5 minutes
-6. Sit back and enjoy
+# Design Ideas
 
-# License
-```
-Copyright (c) 2013 Jeff Sandberg
+## Multiple processers
+Having a pool of "processors" allows us to deal with incoming subreddit data tremendously quickly. Most servers (and home computers) are multi-core, hell, most *phones* are multi-core, so having a single linear proceedural bot makes little sense.
 
-MIT License
+## Request queue
+If we create a processing pool, we have to be wary of hitting the reddit API too much. reddit states that a user or bot should not make more than 30 requests per minute, which is one request every 2 seconds. In prior versions of this bot, this was handled by a `sleep 2` after every single request. While simple, this means that with every subreddit you added, even with just one rule, the total runtime of the script went up by 6 seconds (hey, it was coded over a thanksgiving break)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
+## Making use of new reddit features
+The old bot made use of a few reddit features, such as hiding posts its seen before, and not acting on approved *things*.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+We would like to do even better. By using multi-reddits, we can effectively cut down the requests made to reddit tremendously. Most users of the bot have it active on 5-10 subreddits. A single multi-reddit can return the data from at least 50 reddits, in one request. It seems almost foolish not to use them.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE
-```
+For comments we can keep track of the last comment fetched from a multi-reddit, and use the "after" property to reduce load on reddit servers, and eliminate redundant parsing.
+
+## Constant polling
+Since we're in an EM loop, all we have to do is register a timer that fetches our multireddit at a configurable interval. The temptation with this is to set the interval tremendously high, something like 5 seconds, so the bot is *always* pulling data. In reality, even on one of the largest subreddits, posts and comments only come in at the most frequent every 20 seconds (they may come in sooner but they don't manifest themselves on reddit), and having the bot make full requests for *one* comment is a serious misuse of resources.
+
+## Rules syntax
+I plan to keep the yaml configs almost entirely the same, but with a few additions, namely, a new "rules" syntax. Rules will be another block, where you can define custom rules, similar to the existing ones already. The advantage of rules, though, is a single rule can be easily applied to multiple subreddits. No more having to deal with YAML aliases, no more having to cut and paste the same 5 banned regexes to every subreddit.
+
+This feature is similar to automoderator's rules, but will be designed to fit in with the precedent set by the bot, so the structure will be different.
+
+# Implementation Details
+
+## Request queue
+Everything goes through a singular request queue, which is bound to an [eventmachine][em] repeating timer of 2 seconds. Both data fetching and bot actions will go through this queue, and neither will be given priority over the other. This prevents one hyperactive subreddit from shutting down the bots actions on other subreddits
+
+## Incoming queue
+Assuming worst case scenario, we may occasionally have data coming in faster than the bot can parse and preform mod actions. In this case, every request result will be dumped into a queue. The processors in the processor pool will pop results out of this queue, thus preventing race conditions
+
+## Multireddits
+I mentioned these above, but should write about them again. Currently, the bot runs its main loop *once* for every subreddit, after fetching all the data, and this allows it a fairly simple way of filtering by subreddit. In switching to a multireddit+queue model, we will have to change the approach to read through the rules with EVERY parsing. This incurs a slight preformance hit, but is negated by the pool count's tremendous efficiency. If better programmers than I have a solution to this, i welcome any feedback.
+
+## EM-Synchrony
+This project/rennovation will be making use of both [eventmachine][em] and [em-synchrony][em-s]. EventMachine is a standard ruby event loop. EM-Synchrony is a series of modifications to eventmachine that provide for fiber-based programming, which allows for high concurrency.
+
+I recommend reading [this blogpost](http://www.igvita.com/2010/03/22/untangling-evented-code-with-ruby-fibers/) by the author of EM-Synchrony as to what it does and why it does it.
+
+[em]: https://github.com/eventmachine/eventmachine
+[em-s]: https://github.com/igrigorik/em-synchrony
