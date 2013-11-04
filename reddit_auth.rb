@@ -1,17 +1,21 @@
 require 'snoo'
-require 'highline/import'
+require 'io/console'
 
-@hl = HighLine.new
+puts "Enter your reddit username and password when prompted."
+puts '-' * $stdin.winsize[1]
 
-puts @hl.color("Enter your reddit username and password", :bold, :cyan)
-puts @hl.color("-" * @hl.output_cols, :bold, :cyan)
-username = @hl.ask('Username: ')
+print "Username: "
+username = gets.chomp
 
-password = @hl.ask('Password: ') { |x| x.echo = "*" }
+print "Password: "
+password = $stdin.noecho(&:gets).chomp
+
+puts "\n" + '-' * $stdin.winsize[1]
+
 
 @s = Snoo::Client.new(username: username, password: password)
 
-puts @hl.color("Copy and paste the following to the top of your ", :bold, :cyan) + @hl.color("rubyreddit.yml", :bold, :green) + @hl.color(" file:", :bold, :cyan)
+puts "Copy and paste the following to your config file:"
 
-puts "modhash: #{@s.modhash}"
-puts "cookies: #{@s.cookies.split(/(reddit_session=.*?);/)[1]}"
+puts "modhash: \"#{@s.modhash}\""
+puts "cookies: \"#{@s.cookies.split(/(reddit_session=.*?);/)[1]}\""
